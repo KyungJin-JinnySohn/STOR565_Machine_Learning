@@ -1,10 +1,14 @@
 ---
-title: "Proposal_EDA"
+title: "Project Proposal (Code for EDA)"
 author: "Marshmallow"
-date: "2022 3 6"
+date: "2022 3 9"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
+header-includes:
+  \usepackage{fvextra}
+  \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,commandchars=\\\{\}}
 ---
 
 ```{r setup, include=FALSE}
@@ -19,8 +23,24 @@ if(!require(dplyr)) { install.packages("dplyr", repos = "http://cran.us.r-projec
 if(!require(GGally)) { install.packages("GGally", repos = "http://cran.us.r-project.org"); library(GGally) }
 ```
 
-## 1. Pre-processing Data
-```{r preprocessing}
+```{r wrap-hook, echo=FALSE}
+library(knitr)
+hook_output = knit_hooks$get('output')
+knit_hooks$set(output = function(x, options) {
+  # this hook is used only when the linewidth option is not NULL
+  if (!is.null(n <- options$linewidth)) {
+    x = knitr:::split_lines(x)
+    # any lines wider than n should be wrapped
+    if (any(nchar(x) > n)) x = strwrap(x, width = n)
+    x = paste(x, collapse = '\n')
+  }
+  hook_output(x, options)
+})
+```
+
+## 1. Data Pre-processing and Cleaning
+### 1-1. Data Pre-processing
+```{r preprocessing, linewidth = 90}
 # 1. Read Data
 df.fake <- read.csv('../data/Fake.csv', encoding = 'UTF-8', 
                     header = TRUE)
@@ -35,17 +55,17 @@ dim(df.true)
 table(is.na(df.fake))
 table(is.na(df.true))
           # simple view of the data
-head(df.fake, 3)
-head(df.true, 3)
+colnames(df.fake)
+colnames(df.true)
+head(df.fake, 1)
+head(df.true, 1)
           # category table of the data
 table(df.fake$subject)
 table(df.true$subject)
 ```
 
-## 2. Exploratory data analysis(EDA)
-
-### 2-1. Data Cleaning
-```{r data_cleaning_1}
+### 1-2. Data Cleaning
+```{r data_cleaning_1, linewidth = 90}
 # 1. Remove redundant strings
           # Average text containing "(Reuters)" in True v. Fake Dataset
 mean(grepl("(Reuters)", df.fake$text, fixed = TRUE))
@@ -61,7 +81,7 @@ new_Text <- apply(df.true["text"], 1, drop_prefix)
 new_Text <- as.data.frame(new_Text)
 df.true["text"] <- new_Text
           # result
-head(df.true, 3)
+df.true$text[1]
 ```
 
 ```{r data_cleaning_2, eval=FALSE, echo=TRUE}
@@ -83,7 +103,7 @@ df.full$MainText <- gsub("‘|’|“|”|–", " ", df.full$MainText)
 write.csv(df.full, "../data/Full.csv", row.names = FALSE)
 ```
 
-```{r cleaning_result}
+```{r cleaning_result, linewidth = 90}
 # 1. Read the saved data
 df.full <- read.csv("../data/Full.csv", encoding = 'UTF-8',
                     header = TRUE)
@@ -96,12 +116,11 @@ table(is.na(df.full))
 df.split <- split(df.full, f = df.full$Class)
 df.fake <- df.split[['0']]
 df.true <- df.split[['1']]
-head(df.fake, 3)
-head(df.true, 3)
 ```
 
+## 2. Exploratory data analysis(EDA)
 
-### 2-2. Word count distribution of Fake and True News
+### 2-1. Word Count Distribution of Fake and True News
 ```{r EDA_histogram, message=FALSE, fig.width = 10}
 hist.title <- df.full %>% 
                     mutate(WC.Title = str_count(Title, '\\w+')) %>% 
@@ -127,7 +146,7 @@ ggarrange(hist.title, hist.main,
           ncol = 2, nrow = 1)
 ```
 
-### 2-3. Top 20 of most used word for Fake and True News
+### 2-2. Top 20 of most used word for Fake and True News
 ```{r EDA_freq_top20, eval=FALSE, echo=TRUE}
 # 1. Data cleaning and calculate the word frequency
 cleanup.text <- function(docs){
@@ -246,8 +265,8 @@ ggarrange(fake.bar, true.bar,
 
 ## 3. EDA of Linguistic Inquiry and Word Count(LIWC) data
 
-### 3-1. Pre-processing LIWC result
-```{r LIWC_preprocessing}
+### 3-1. Pre-processing LIWC Result
+```{r LIWC_preprocessing, linewidth = 90}
 # 1. Read Data
 df.fake.LIWC <- read.csv('../data/565_Fake_LIWC.csv', encoding = 'UTF-8', 
                     header = TRUE)
@@ -276,11 +295,11 @@ dim(df.full.LIWC)
           # check NA values
 table(is.na(df.full.LIWC))
           # simple view of the data
-head(df.full.LIWC, 3)
+head(df.full.LIWC, 1)
 ```
 
-### 3-2. Correlations between LIWC variables
-```{r LIWC_cor}
+### 3-2. Correlations between LIWC Variables
+```{r LIWC_cor, linewidth = 90}
 # 1. Select upper-level variables
 top_var <- c("Class", "WC", "Tone", "WPS", "Sixltr", "function.", "ppron", 
              "article", "prep", "auxverb", "adverb", "conj", "negate", "verb", 
@@ -309,8 +328,8 @@ colnames(LIWC.cor.top20) <- c("Var1", "Var2", "Correlation")
 LIWC.cor.top20
 ```
 
-### 3-3. Visualizing relationships among LIWC variables
-```{r LIWC_scatter, fig.width = 10}
+### 3-3. Visualizing Relationships among LIWC variables
+```{r LIWC_scatter, message=FALSE, fig.width = 10}
 df.subfull.LIWC <- df.full.LIWC %>% 
           select("Class", "WC", "WPS", "Tone", "ppron", "Sixltr", "adverb", 
                  "social", "informal")
@@ -339,7 +358,7 @@ par(mfrow=c(1,1))
 ```
 
 ### 3-4. Testing means between two different groups
-```{r LIWC_ttest}
+```{r LIWC_ttest, linewidth = 90}
 t.test(df.subfull.LIWC$WC[df.subfull.LIWC$Class==0],
        df.subfull.LIWC$WC[df.subfull.LIWC$Class==1])
 t.test(df.subfull.LIWC$WPS[df.subfull.LIWC$Class==0],
@@ -357,5 +376,3 @@ t.test(df.subfull.LIWC$Sixltr[df.subfull.LIWC$Class==0],
 t.test(df.subfull.LIWC$informal[df.subfull.LIWC$Class==0],
        df.subfull.LIWC$informal[df.subfull.LIWC$Class==1])
 ```
-
-p-value are really small, meaning the differences between the means are statistically significant. Two sample t-test confirms what we saw visually.
