@@ -1,0 +1,34 @@
+---
+title: "565_Final_Feature"
+author: "KyungjinSohn"
+date: '2022 4 9 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr)
+```
+
+## Combine feature extraction results
+
+```{r}
+ngram.title <- read.csv("./full_title.csv", header = TRUE)
+colnames(ngram.title)[1:2] <- c("title", "id")
+colnames(ngram.title)[3:ncol(ngram.title)] <- paste0(colnames(ngram.title)[3:ncol(ngram.title)], "_title")
+ngram.text <- read.csv("./full_text.csv", header = TRUE)
+colnames(ngram.text)[1:2] <- c("text", "id")
+colnames(ngram.text)[3:ncol(ngram.text)] <- paste0(colnames(ngram.text)[3:ncol(ngram.text)], "_text")
+sentiment.fake <- read.csv("./Fake_sentiment_feature.csv", header = TRUE)
+sentiment.true <- read.csv("./True_sentiment_feature.csv", header = TRUE)
+sentiment.full <- rbind(sentiment.fake, sentiment.true)
+          
+feature.full <- full_join(ngram.title, ngram.text)
+feature.full <- full_join(feature.full, sentiment.full)
+
+feature.full <- feature.full %>%
+          select(id, title, text, everything())
+
+write.csv(feature.full, file ="full_feature.csv", row.names = FALSE)
+```

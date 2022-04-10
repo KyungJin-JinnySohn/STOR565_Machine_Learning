@@ -1,0 +1,109 @@
+---
+title: "565_Final_ngram"
+author: "Marshmallow"
+date: '2022 4 6 '
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidytext)
+library(dplyr)
+library(janeaustenr)
+library(ngram)
+library(superml)
+library(tidyverse)
+library(tidyr)
+```
+
+### Read File
+```{r}
+# Read the file and only select the top 10 articles to test
+fake <- read.csv('Fake_wCorpus.csv', encoding = 'UTF-8', header = TRUE)
+true <- read.csv('True_wCorpus.csv', encoding = 'UTF-8', header = TRUE)
+
+fake$id <- paste0("F", 1:nrow(fake))
+true$id <- paste0("T", 1:nrow(true))
+
+full <- rbind(fake, true)
+```
+
+### Feature 1. Function to get Term Frequency (TF)
+
+1. Count words appearing in the documents to figure out the similarity between documents 
+2. Each word count is then converted into the probability of such word existing in the documents.
+
+Refer : (1) [ngram-guide](https://cran.r-project.org/web/packages/ngram/vignettes/ngram-guide.pdf)
+(2) [tokenizing-by-n-gram](https://bookdown.org/Maxine/tidy-text-mining/tokenizing-by-n-gram.html)
+
+### Feature 2. Function to get Term Frequency-Inverted Document Frequency (TF-IDF)
+
+1. Weights down the term frequency while scaling up the rare ones. 
+(ensure that we put a lower weight to a token if it occurs too frequently (like stopwords).)
+
+Refer : (1) [tfidf-definition](https://bookdown.org/Maxine/tidy-text-mining/tf-idf.html)
+(2) [tfidf-code](https://cran.r-project.org/web/packages/tidytext/vignettes/tf_idf.html)
+(3) [tfidf-code2](https://rpubs.com/jackv13/spam-filtering)
+(4) [tfidf-def2](https://towardsdatascience.com/how-to-identify-spam-using-natural-language-processing-nlp-af91f4170113)
+(5) [tfidf-def3](https://towardsdatascience.com/how-to-build-your-first-spam-classifier-in-10-steps-fdbf5b1b3870)
+
+
+```{r}
+ngram.cal <- function(full.data, n_size) {
+          # Divide text in to ngrams
+          full.ngram <- data.frame(full.data) %>% 
+                    unnest_tokens(word, text, token = 'ngrams', n = n_size) %>% 
+                    count(id, word, sort = TRUE)
+
+          full.ngram.total <- full.ngram %>% group_by(id) %>% 
+                    summarize(total = sum(n))
+          full.ngram <- left_join(full.ngram, full.ngram.total)
+          
+          # Chose top 20 most used ngram word from each class(around 40 in total)
+          top20.word <- full.ngram %>% 
+                    mutate(class = substr(id, 1, 1)) %>% 
+                    group_by(class, word) %>% summarise(word.freq = n()) %>% ungroup() %>% 
+                    group_by(class) %>% arrange(desc(word.freq)) %>% top_n(20)
+
+          top20.word <- unique(top20.word$word)
+          
+          # Calculate TF and TF-IDF
+          high_freq.ngram <- full.ngram %>%
+                    bind_tf_idf(word, id, n) %>%
+                    filter(word %in% top20.word)
+
+          # Transform the result
+          full.ngram.spread <- high_freq.ngram %>% 
+                    select(id, word, tf, tf_idf) %>% 
+                    gather(variable, value, -(id:word)) %>%
+                    unite(temp, word, variable) %>%
+                    spread(temp, value)
+          
+          return(full.ngram.spread)
+}
+
+# 1. Title
+full.title <- full[, c(7, 10)]
+colnames(full.title) <- c("text", "id")
+
+full.title.ngram <- ngram.cal(full.title, 2)
+
+full.title <- left_join(full.title, full.title.ngram)
+full.title[is.na(full.title)] <- 0
+
+write.csv(full.title, file ="ngram_title.csv", row.names = FALSE)
+
+# 2. Text
+full.text <- full[, c(9, 10)]
+colnames(full.text) <- c("text", "id")
+
+full.text.ngram <- ngram.cal(full.text, 2)
+
+full.text <- left_join(full.text, full.text.ngram)
+full.text[is.na(full.text)] <- 0
+
+write.csv(full.text, file ="ngram_text.csv", row.names = FALSE)
+```
+
