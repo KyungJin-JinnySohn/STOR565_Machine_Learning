@@ -42,9 +42,9 @@ knit_hooks$set(output = function(x, options) {
 ### 1-1. Data Pre-processing
 ```{r preprocessing, linewidth = 90}
 # 1. Read Data
-df.fake <- read.csv('../data/Fake.csv', encoding = 'UTF-8', 
+df.fake <- read.csv('../data/Proposal_EDA/Fake.csv', encoding = 'UTF-8', 
                     header = TRUE)
-df.true <- read.csv('../data/True.csv', encoding = 'UTF-8', 
+df.true <- read.csv('../data/Proposal_EDA/True.csv', encoding = 'UTF-8', 
                     header = TRUE)
 
 # 2. Look through the data
@@ -100,12 +100,12 @@ df.full$Title <- gsub("‘|’|“|”|–", " ", df.full$Title)
 df.full$MainText <- gsub("[][!#$%()*,.:;<=>@^_|~.{}]", " ", df.full$MainText)
 df.full$MainText <- gsub("‘|’|“|”|–", " ", df.full$MainText)
           # Save the result
-write.csv(df.full, "../data/Full.csv", row.names = FALSE)
+write.csv(df.full, "../data/Proposal_EDA/Full.csv", row.names = FALSE)
 ```
 
 ```{r cleaning_result, linewidth = 90}
 # 1. Read the saved data
-df.full <- read.csv("../data/Full.csv", encoding = 'UTF-8',
+df.full <- read.csv("../data/Proposal_EDA/Full.csv", encoding = 'UTF-8',
                     header = TRUE)
 df.full$Class <- as.factor(df.full$Class)
 
@@ -179,31 +179,31 @@ cleanup.text <- function(docs){
 fake.title <- paste(df.fake$Title, collapse = " ")
 docs <- Corpus(VectorSource(fake.title))
 fake.title.freq <- cleanup.text(docs)
-write.csv(fake.title.freq, "../data/Fake_wordFreq_Title.csv", row.names = FALSE)
+write.csv(fake.title.freq, "../data/Proposal_EDA/Fake_wordFreq_Title.csv", row.names = FALSE)
           # True News
 true.title <- paste(df.true$Title, collapse = " ")
 docs <- Corpus(VectorSource(true.title))
 true.title.freq <- cleanup.text(docs)
-write.csv(true.title.freq, "../data/True_wordFreq_Title.csv", row.names = FALSE)
+write.csv(true.title.freq, "../data/Proposal_EDA/True_wordFreq_Title.csv", row.names = FALSE)
 
 # 3. Save results of Main Text
           # Fake News
 fake.MainText <- paste(df.fake$MainText, collapse = " ")
 docs <- Corpus(VectorSource(fake.MainText))
 fake.MainText.freq <- cleanup.text(docs)
-write.csv(fake.MainText.freq, "../data/Fake_wordFreq_MainText.csv", row.names = FALSE)
+write.csv(fake.MainText.freq, "../data/Proposal_EDA/Fake_wordFreq_MainText.csv", row.names = FALSE)
           # True News
 true.MainText <- paste(df.true$MainText, collapse = " ")
 docs <- Corpus(VectorSource(true.MainText))
 true.MainText.freq <- cleanup.text(docs)
-write.csv(true.MainText.freq, "../data/True_wordFreq_MainText.csv", row.names = FALSE)
+write.csv(true.MainText.freq, "../data/Proposal_EDA/True_wordFreq_MainText.csv", row.names = FALSE)
 ```
 
 ```{r EDA_barplot, fig.width = 10, fig.height=6}
 # 1. Read frequency data for title
-df.fakeTitle.freq <- read.csv('../data/Fake_wordFreq_Title.csv', encoding = 'UTF-8', 
+df.fakeTitle.freq <- read.csv('../data/Proposal_EDA/Fake_wordFreq_Title.csv', encoding = 'UTF-8', 
                     header = TRUE)
-df.trueTitle.freq <- read.csv('../data/True_wordFreq_Title.csv', encoding = 'UTF-8',
+df.trueTitle.freq <- read.csv('../data/Proposal_EDA/True_wordFreq_Title.csv', encoding = 'UTF-8',
                     header = TRUE)
 
 # 2. Draw bar plot of top 20 for title
@@ -232,9 +232,9 @@ ggarrange(fake.bar, true.bar,
           ncol = 2, nrow = 1)
 
 # 3. Read frequency data for MainText
-df.fakeMainText.freq <- read.csv('../data/Fake_wordFreq_MainText.csv', encoding = 'UTF-8', 
+df.fakeMainText.freq <- read.csv('../data/Proposal_EDA/Fake_wordFreq_MainText.csv', encoding = 'UTF-8', 
                     header = TRUE)
-df.trueMainText.freq <- read.csv('../data/True_wordFreq_MainText.csv', encoding = 'UTF-8',
+df.trueMainText.freq <- read.csv('../data/Proposal_EDA/True_wordFreq_MainText.csv', encoding = 'UTF-8',
                     header = TRUE)
 
 # 2. Draw bar plot of top 20 for MainText
@@ -268,9 +268,9 @@ ggarrange(fake.bar, true.bar,
 ### 3-1. Pre-processing LIWC Result
 ```{r LIWC_preprocessing, linewidth = 90}
 # 1. Read Data
-df.fake.LIWC <- read.csv('../data/565_Fake_LIWC.csv', encoding = 'UTF-8', 
+df.fake.LIWC <- read.csv('../data/Proposal_EDA/565_Fake_LIWC.csv', encoding = 'UTF-8', 
                     header = TRUE)
-df.true.LIWC <- read.csv('../data/565_True_LIWC.csv', encoding = 'UTF-8',
+df.true.LIWC <- read.csv('../data/Proposal_EDA/565_True_LIWC.csv', encoding = 'UTF-8',
                     header = TRUE)
 
 # 2. Combine Data
