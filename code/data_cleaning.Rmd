@@ -1,0 +1,163 @@
+---
+title: "Data Cleaning"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r package_load-in}
+if(!require(tm)) { install.packages("tm", repos = "http://cran.us.r-project.org"); library(tm) }
+library(SnowballC)
+if(!require(dplyr)) { install.packages("dplyr", repos = "http://cran.us.r-project.org"); library(dplyr) }
+if(!require(stringr)) { install.packages("stringr", repos = "http://cran.us.r-project.org"); library(stringr) }
+```
+
+```{r load_datasets, eval = F}
+# 1. Read Data
+df.fake <- read.csv('../data/Proposal_EDA/Fake.csv', encoding = 'UTF-8', header = TRUE)
+df.true <- read.csv('../data/Proposal_EDA/True.csv', encoding = 'UTF-8', header = TRUE)
+
+# 2. Look through the data
+dim(df.fake)
+dim(df.true)
+
+# check NA values
+table(is.na(df.fake))
+table(is.na(df.true))
+
+# simple view of the data
+head(df.fake, 3)
+head(df.true, 3)
+
+# category table of the data
+table(df.fake$subject)
+table(df.true$subject)
+```
+
+```{r data_cleaning_1, eval = F}
+# 1. Remove redundant strings
+  # Average text containing "(Reuters)" in True v. Fake Dataset
+mean(grepl("(Reuters)", df.fake$text, fixed = TRUE))
+mean(grepl("(Reuters)", df.true$text, fixed = TRUE))
+  # Drop Prefix (Reuters) Function
+drop_prefix <- function(text, prefix = '(Reuters)', n = 5) {
+  # splits textual data into separate words + symbols
+  ts = strsplit(text, " ") 
+  ifelse(prefix %in% ts[[1]][1:5], 
+         strsplit(text,"(Reuters) - ", fixed = TRUE)[[1]][-1], text)
+}
+new_Text <- apply(df.true["text"], 1, drop_prefix) # with-in true dataset, drop the prefix Reuters
+new_Text <- as.data.frame(new_Text)
+df.true["text"] <- new_Text
+  # result
+head(df.true, 3)
+```
+
+```{r data_cleaning_2, eval=FALSE, echo=TRUE}
+# 2. Combine Data
+df.fake$Class <- 0
+df.true$Class <- 1
+df.full<- rbind(df.fake, df.true)
+  # give column names which are missing
+colnames(df.full) <- c("Title", "MainText", "Subject", "Date", "Class")
+colnames(df.full)
+  # save full dataframe as csv file
+write.csv(df.full, "../data/Feature_extraction/Full_cleaning.csv", row.names = FALSE) 
+```
+
+```{r load_in_cleaned_dataset}
+# 1. Read the saved data
+df.full <- read.csv("../data/Feature_extraction/Full_cleaning.csv", encoding = 'UTF-8',
+                    header = TRUE)
+df.full$Class <- as.factor(df.full$Class)
+# 2. Check null data
+table(is.na(df.full))
+# 3. Split the data
+df.split <- split(df.full, f = df.full$Class)
+df.fake <- df.split[['0']]
+df.true <- df.split[['1']]
+```
+
+```{r corpus_cleaning_function}
+cleanup.text <- function(doc){
+  toSpace <- content_transformer(function (x , pattern) gsub(pattern, " ", x))
+  elim <- content_transformer(function (x , pattern) gsub(pattern, "", x))
+  removeLinks <- function(x) gsub("(f|ht)tp(s?)://(.*)[.][a-z]+", "", x)
+  removeTcoLinks <- function(x) gsub("https://t.co/[a-z,A-Z,0-9]*","",x)
+  removeBitly <- function(x) gsub("bit.ly/[a-z,A-Z,0-9]*", '', x)
+  removeSpecialChars <- function(x) gsub("[^a-zA-Z0-9 ]","",x)
+  removeSingleLetters <- function(x) gsub("\\s[A-Za-z](?= )", "", x, perl = TRUE)
+
+  doc <- tm_map(doc, removeLinks)
+  doc <- tm_map(doc, removeBitly)
+  doc <- tm_map(doc, toSpace, ",")
+  doc <- tm_map(doc, toSpace, "@")
+  doc <- tm_map(doc, toSpace, "/")
+  doc <- tm_map(doc, toSpace, "&")
+  doc <- tm_map(doc, toSpace, "#")
+  doc <- tm_map(doc, toSpace, "-")
+  doc <- tm_map(doc, elim, "’s")
+
+  # Cleaning up the text
+  doc <- tm_map(doc, removePunctuation) # gsub('[[:punct:]]','',x) !"#$%&'()*+, \-./:;<=>?@[\\\]^_{|}~`
+  doc <- tm_map(doc, stripWhitespace)
+  doc <- tm_map(doc, content_transformer(tolower))
+  doc <- tm_map(doc, removeNumbers)
+  
+  # Remove Stopwords  **<- Point of failure**
+  doc <- tm_map(doc, removeWords, stopwords('english'))
+  doc <- tm_map(doc, removeSingleLetters) # remove single letters from text, can remove if unnecessary
+  doc <- tm_map(doc, removeSpecialChars) # remove special characters, namely quotation marks and apostrophes
+  
+  # Text stemming
+  doc_stemmed <- tm_map(doc, stemDocument)
+  
+  # Remove extra spaces in the text
+  doc <- str_trim(doc, side = "both")
+  doc <- str_squish(doc)
+
+  return(list("doc" = doc, "doc_stemmed" =doc_stemmed))
+}
+```
+
+```{r clean_fake_corpus, warning = F}
+df.fake$TitleCorpus <- NA
+df.fake$TitleCorpusStemmed <- NA
+df.fake$MainTextCorpus <- NA
+df.fake$MainTextCorpusStemmed <- NA
+
+for (i in 1:length(df.fake$Title)) {
+  title <- Corpus(VectorSource(df.fake$Title[i]))
+  output <- cleanup.text(title)
+  df.fake$TitleCorpus[i] <- output[[1]]
+  df.fake$TitleCorpusStemmed[i] <- as.character(output[[2]])
+  
+  maintext <- Corpus(VectorSource(df.fake$MainText[i]))
+  output <- cleanup.text(maintext)
+  df.fake$MainTextCorpus[i] <- output[[1]]
+  df.fake$MainTextCorpusStemmed[i] <- as.character(output[[2]])
+}
+write.csv(df.fake, "../data/Feature_extraction/Fake_wCorpus.csv", row.names = FALSE)
+```
+
+```{r clean_true_corpus, warning = F}
+df.true$TitleCorpus <- NA
+df.true$TitleCorpusStemmed <- NA
+df.true$MainTextCorpus <- NA
+df.true$MainTextCorpusStemmed <- NA
+
+for (i in 1:length(df.true$Title)) {
+  title <- Corpus(VectorSource(df.true$Title[i]))
+  output <- cleanup.text(title)
+  df.true$TitleCorpus[i] <- output[[1]]
+  df.true$TitleCorpusStemmed[i] <- as.character(output[[2]])
+  
+  maintext <- Corpus(VectorSource(df.true$MainText[i]))
+  output <- cleanup.text(maintext)
+  df.true$MainTextCorpus[i] <- output[[1]]
+  df.true$MainTextCorpusStemmed[i] <- as.character(output[[2]])
+}
+write.csv(df.true, "../data/Feature_extraction/True_wCorpus.csv", row.names = FALSE)
+```
