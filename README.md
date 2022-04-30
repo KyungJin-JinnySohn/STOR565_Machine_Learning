@@ -14,32 +14,32 @@ Our dataset on real versus fake news comes from [Kaggle](https://www.kaggle.com/
 
 We found it necessary to use natural language processing techniques and perform feature extraction since the data that we are using did not come with features that we could work with. 
 
-- Code: *data_cleaning.Rmd*.
+- Code: <mark>*data_cleaning.Rmd*</mark>  
 
 ## Exploratory Data Analysis(EDA)
 
 To look at the difference between fake and true news, we did exploratory data analysis. In addition, we used a lexicon based method with the Linguistic Inquiry and Word Count(LIWC).
 
-- Code: *Proposal_EDA.Rmd*
-- Detailed Description: *Marshmallow_Project_Proposal.pdf*.
+- Code: <mark>*Proposal_EDA.Rmd*
+- Detailed Description: <mark>*Marshmallow_Project_Proposal.pdf*</mark> 
 
 ## Feature extraction
 
 When using text data, the data itself does not include variables with which models can be directly built. Therefore, we need to go through a step of feature extraction. We used two methods:
 
 1. Bag of n-Gram
-    + Code: *Feature_extraction_ngram.Rmd*
+    + Code: <mark>*Feature_extraction_ngram.Rmd*</mark> 
 2. Sentiment Analysis
-    + Code: *Feature_extraction_sentiment.Rmd*
+    + Code: <mark>*Feature_extraction_sentiment.Rmd*</mark> 
     
-- Code(combines data): *Feature_extraction_comb.Rmd*
+- Code(combines data): <mark>*Feature_extraction_comb.Rmd*</mark> 
 
 ## Modeling
 
 We developed a total of 10 classification methods(LDA, QDA, KNN: k = 1, KNN: k = 184, SVC (linear), SVM (polynomial), decision trees, bagging, random forest, logistic, neural networks).
 
-- Code: *Final_models.Rmd*
-- Code(trial and error): *models_knn.Rmd* and *models_svm.Rmd*
+- Code: <mark>*Final_models.Rmd*</mark> 
+- Code(trial and error): <mark>*models_knn.Rmd*</mark> and <mark>*models_svm.Rmd*</mark> 
 
 ## Result
 
