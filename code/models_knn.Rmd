@@ -1,0 +1,140 @@
+---
+title: "565 project models: KNN"
+author: "Marshmallow"
+output: html_document
+date: '2022-04-18'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(class)
+```
+
+```{r read_in data}
+data <- read.csv("../data/Feature_extraction/Full_Feature_extraction.csv")
+```
+
+```{r col names}
+colnames(data)
+#str(data)
+```
+
+```{r scaledata}
+#outcome column 
+fake <- data.frame(data$fake)
+
+#dataset of predictors
+knn_predset <- data[,4:172]
+```
+
+```{r partitiondata}
+set.seed(5935) #set seed to make partition reproducible 
+
+# 75% of the sample size
+smp_size <- floor(0.75 * nrow(knn_predset))
+train_ind <- sample(seq_len(nrow(knn_predset)), size = smp_size)
+
+# creating test and training sets that contain all of the predictors
+pred_train <- knn_predset[train_ind, ]
+pred_test <- knn_predset[-train_ind, ]
+
+# Split outcome variable into training and test sets using the same partition as above.
+fake_train <- fake[train_ind,]
+fake_test <- fake[-train_ind,]
+```
+
+```{r scaledata}
+#scale dataset
+pred_train_scaled <- scale(pred_train)
+pred_test_scaled <- scale(pred_test)
+```
+
+```{r knn_sqrt(N)}
+# We have to decide on the number of neighbors (k). There are several rules of thumb, one being the square root of the number of observations in the training set. 
+
+neighbors <- floor(sqrt(length(fake_train)))
+
+# testing knn classification with k = sqrt(num of observations)
+knn_fit_sqrtN <- knn(train = pred_train_scaled, test = pred_test_scaled, cl = fake_train, k = neighbors) # ~ 4 minutes runtime
+mean(knn_fit_sqrtN == fake_test) #0.8667261
+```
+
+```{r knn_k1}
+knn_fit_k1 <- knn(train = pred_train_scaled, test = pred_test_scaled, cl = fake_train, k = 1)
+mean(knn_fit_k1 == fake_test) # 0.8910468
+```
+
+```{r testing_various_kvalues}
+k = seq(5,400,10)
+accuracy = rep(0,40)
+for (i in c(1:40)){
+  knn.pred = knn(train= pred_train_scaled, test = pred_test_scaled , cl = fake_train, k = k[i])
+  accuracy[i] = mean(knn.pred == fake_test)
+}
+```
+We copied and pasted the results of the above here: Highest accuracy may be for KNN w/ kneighbors = 15. Although when I ran the full model w/ k = 1, I got accuracy around 88%.
+
+[1] 0.8647661 0.8717149 0.8668151 0.8650334 0.8650334 0.8645880 0.8643207 0.8625390 0.8624499 0.8620045 0.8603118 0.8601336
+[13] 0.8611136 0.8615590 0.8601336 0.8610245 0.8618263 0.8617372 0.8617372 0.8606682 0.8596882 0.8599555 0.8595991 0.8596882
+[25] 0.8605791 0.8597773 0.8591537 0.8601336 0.8597773 0.8584410 0.8583519 0.8580846 0.8578174 0.8570156 0.8574610 0.8570156
+[37] 0.8564811 0.8556793 0.8555902 0.8563920
+
+The model with k = 1 still returned the highest accuracy. 
+
+We found that the lower the k number of neighbors, the higher the accuracy was for our KNN model. Given the size of our data-set, we thought it would be more appropriate to do k=1 KNN, since that was the k value that gave the highest accuracy, and k = 184, which was the recommended size of k for our dataset in our comparison with other models in the end. 
+
+## KNN CV
+
+```{r KNNCV_function}
+# kNN Cross Validation
+knn.Kfold.cv <- function(Kfolds, kneighbors, newseed, data, targetdata) {
+  set.seed(newseed) # set seed for reproducibility
+  
+  #Create K folds (total observations is not divisible by kfolds so may not be equal size)
+  folds <- sample(rep(1:Kfolds, diff(floor(nrow(data) * seq(0, 1, by = 1/Kfolds)))))
+  accuracy <- rep(0, Kfolds)
+  
+  #Perform K-fold cross validation
+  for (i in 1:Kfolds) { # choose fold i to be testing fold in cv
+    testIndexes <- which(folds==i,arr.ind=TRUE) # choose indices that are in set i to be testing data
+     
+    # extract training set
+    trainData <- data[-testIndexes, ]
+    
+    # extract testing set
+    testData <- data[testIndexes, ]
+    
+    target_train <- targetdata[-testIndexes,]
+    target_test <- targetdata[testIndexes,]
+    
+    fit <- class::knn(train = trainData,
+                     test = testData,
+                     cl = target_train,
+                     k = kneighbors ) # k is number of neighbors
+   
+    accuracy[i] = mean(fit == target_test)
+  }
+  
+  #print(accuracy)
+  mean(accuracy)
+  #error = 1-mean(accuracy)
+  #error
+}
+```
+
+```{r KNNCV eval = F}
+k = c(1, 15, 30, 50, 100, 150, 200)
+accuracy = rep(0,6)
+for (i in c(1:6)){
+  knn.pred = knn(train=pred_train, test = pred_test ,fake_train, k = k[i])
+  accuracy[i] = knn.Kfold.cv(Kfolds = 4, kneighbors = k[i], newseed = 343, 
+                             data = data.frame(pred_train),
+                             targetdata = data.frame(fake_train))
+}
+
+saveAccuracy <- accuracy
+```
+
+Accuracy from running code above: 0.8755679 0.8693315 0.8674605 0.8660647 0.8636296 0.8618774
+
+Overall, k = 1 still returned the highest accuracy

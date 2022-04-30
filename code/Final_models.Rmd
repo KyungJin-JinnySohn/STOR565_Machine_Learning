@@ -1,0 +1,304 @@
+---
+title: "565 project models"
+author: "Marshmallow"
+output: html_document
+date: '2022-04-18'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(MASS) # LDA, QDA
+library(class) # KNN
+library(e1071) # SVM
+library(tree, quietly = TRUE) # Decision Tree
+library(randomForest, quietly = TRUE) # Random Forest
+library(glmnet) # logistic
+library(keras) # Neural Network
+library(tensorflow)
+library(dplyr)
+library(ggplot2) # plot
+require(reshape2)
+load("../data/Final_models/Final_models.RData")
+```
+
+```{r read_in data}
+data <- read.csv("../data/Feature_extraction/Full_Feature_extraction.csv")
+colnames(data)
+str(data)
+```
+
+```{r scaledata}
+# outcome column 
+data$y <- as.factor(substr(data$id, 1, 1))
+# dataset of predictors
+data2 <- data[,4:173]
+```
+
+```{r partitiondata}
+set.seed(5935) # set seed to make partition reproducible 
+# 75% of the sample size
+smp_size <- floor(0.75 * nrow(data2))
+train_ind <- sample(seq_len(nrow(data2)), size = smp_size)
+# split the data
+data_train <-  data2[train_ind,]
+data_test <- data2[-train_ind,]
+# creating test and training sets that contain all of the predictors
+pred_train <- data2[train_ind, 1:169]
+pred_test <- data2[-train_ind, 1:169]
+# split outcome variable into training and test sets using the same partition as above.
+fake_train <- data2[train_ind, 170]
+fake_test <- data2[-train_ind, 170]
+```
+
+```{r scaledata}
+# scale dataset
+pred_train_scaled <- scale(pred_train)
+pred_test_scaled <- scale(pred_test)
+```
+
+# LDA and QDA
+## LDA
+```{r lda}
+# 1. LDA
+fit.lda <- lda(y ~ ., data = data_train)
+lda.pred <- predict(fit.lda, data_test, type = "response")$class
+mean(lda.pred == fake_test) # 0.8635189
+```
+
+## QDA
+```{r qda}
+fit.qda <- qda(y ~ title.mean +text.mean+last.week_tf_idf_text+look.like_tf_idf_text+
+                 said.statement_tf_idf_text + social.media_tf_idf_text + us.senat_tf_idf_text+
+                 year.old_tf_title+fox.news_tf_idf_text+new.york_tf_idf_text+
+                 last.month_tf_idf_text+hillari.clinton_tf_idf_text+presid.obama_tf_idf_text+
+                 featur.imag_tf_idf_text+last.year_tf_text+offici.said_tf_idf_text+
+                 told.report_tf_idf_text+told.reuter_tf_idf_text+suprem.court_tf_idf_title+
+                 barack.obama_tf_idf_text+featur.imag_tf_idf_text+st.centuri_tf_idf_text+
+                 say.trump_tf_idf_title+text.joy+title.joy+text.trust+title.trust+text.1+
+                 title.disgust+text.disgust+text.median+text.min+text.max+text.fear+
+                 text.anticipation+text.3+text.surprise+title.surprise+
+                 donald.trump_tf_idf_title+text.sadness, data = data_train)
+qda.pred <- predict(fit.qda, data_test, type = "response")$class
+mean(qda.pred==fake_test)
+```
+
+# KNN
+```{r knn1}
+# testing knn classification with k = 1
+knn.pred.k1 <- knn(train = pred_train_scaled, test = pred_test_scaled, cl = fake_train, k = 1)
+mean(knn.pred.k1 == fake_test) # 0.8910468
+
+# testing knn classification with k = 15
+k.opt <- round(sqrt(nrow(data_train)))
+knn.pred.k15 <- knn(train = pred_train_scaled, test = pred_test_scaled, cl = fake_train, k = k.opt)
+mean(knn.pred.k15 == fake_test) # 0.8681514
+```
+
+# SVM(linear, radial, poly)
+```{r svm}
+# svc(linear)
+svc.fit <- svm(y ~ ., data = data_train, kernel = "linear", cost = 5, scale = FALSE)
+svc.pred <- predict(svc.fit, data_test)
+mean(svc.pred == fake_test) # 0.8581737
+# svm(polynomial)
+svm.fit <- svm(y ~ ., data = data_train, kernel = "polynomial", cost = 1, degree = 1, scale = FALSE)
+svm.pred <- predict(svm.fit, data_test)
+mean(svm.pred == fake_test) # 0.7323831
+```
+
+# Tree+Random Forest + Bagging
+## Decision Tree
+```{r tree}
+# Fit a tree on the training data
+tree.news <- tree(y ~ ., data = data_train)
+# Prune the tree
+set.seed(565)
+cv.news <- cv.tree(tree.news, FUN = prune.misclass)
+b <- cv.news$size[which.min(cv.news$dev)] # best number of terminal nodes
+prune.news <- prune.misclass(tree.news, best = b)
+summary(prune.news)
+# Plot the pruned tree
+plot(prune.news)
+text(prune.news, pretty = 0)
+title(main = "Pruned Tree")
+# Prediction on test set
+tree.pred <- predict(prune.news, newdata = data_test, type ='class')
+# Calculate the predicted against the truth
+table(tree.pred, fake_test)
+mean(tree.pred == fake_test) # 0.7879733
+```
+
+## Bagging
+```{r bagging}
+set.seed(565)
+# Fit a tree on the training data
+bag.news <- randomForest(y ~ ., data = data_train, 
+                         mtry = ncol(data2)-1, importance = TRUE, ntree = 500)
+bag.news
+# Prediction on test set
+bag.pred <- predict(bag.news, newdata = data_test, type='class')
+# Calculate the predicted against the truth
+table(bag.pred, fake_test)
+mean(bag.pred == fake_test) # 0.9228508
+# Calculate the importance of each predictor
+importance(bag.news)
+# Plot these importance measures
+varImpPlot(bag.news)
+```
+
+## Random Forest
+```{r forest}
+set.seed(565)
+# Fit a tree on the training data
+m <- floor(sqrt(ncol(data2)-1))
+rf.news <- randomForest(y ~ ., data = data_train, 
+                        mtry = m, importance = TRUE, ntree = 500)
+rf.news
+# Prediction on test set
+rf.pred <- predict(rf.news, newdata = data_test, type ='class')
+# Calculate the predicted against the truth
+table(rf.pred, fake_test)
+mean(rf.pred == fake_test) # 0.9314031
+# Calculate the importance of each predictor
+importance(rf.news)
+# Plot these importance measures
+varImpPlot(rf.news)
+```
+
+# Logistic
+```{r}
+# Logistic
+log.fit <- glm(y~., data = data_train, family = "binomial")
+# Prediction on test set
+log.pred <- ifelse(predict(log.fit, data_test, type = "response")>.5, 'T', 'F')
+table(log.pred, fake_test)
+mean(log.pred == fake_test) # 0.8876615
+```
+
+# Neural Network
+```{r nn}
+set.seed(50)
+# Prepare the train and test data
+x <- model.matrix(y ~.-1, data = data2)
+x_train <- model.matrix(y ~.-1, data = data_train)
+y_train <- data_train$y =='T'
+x_test <- model.matrix(y ~.-1, data = data_test)
+g_test <- data_test$y == 'T'
+# Fit model
+model <- keras_model_sequential() %>% 
+  layer_dense(units = 128, activation = "relu", input_shape=ncol(x)) %>% 
+  layer_dropout(0.2) %>% 
+  layer_dense(units = 64, activation = "relu") %>% 
+  layer_dropout(0.1) %>% 
+  layer_dense(1, activation = "sigmoid")
+summary(model)
+# Compile Model
+model %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = optimizer_adam(learning_rate = 0.01),
+  metrics = "accuracy"
+  )
+# Fit the model on training data
+model %>% fit(x = x_train, y = y_train,
+              epochs = 50,
+              validation_split = 0.3,
+              verbose = 2,
+              batch_size = 128)
+# Prediction on test set
+nn.pred <- ifelse(predict(model, x_test) >.5, 'T', 'F')
+table(nn.pred, g_test)
+mean(nn.pred == fake_test) # 0.8917595 
+model %>% evaluate(x_test, g_test, verbose = 0)
+```
+
+# Combined Result
+## Report Results
+```{r report_fun}
+get.all.results <-function(method, fitted.val, real.val){
+  cm <- table(fitted.val, real.val) # confusion matrix:
+  accuracy <- mean(fitted.val == real.val)
+  sensitivity <- cm[2,2]/sum(real.val == "T")
+  specificity <- cm[1,1]/ sum(real.val == "F")
+  false.positive <- cm[2,1]/sum(real.val == "F")
+  error.training <- (cm[1,2]+cm[2,1])/length(real.val)
+  values <- cbind(accuracy, sensitivity, specificity, false.positive, error.training)
+  result.table <- cbind(method, round(values, 3))
+  colnames(result.table) <- c('Method', 'Accuracy', 'Sensitivity', 
+                              'Specificity', 'False.positive', 'Test.Error')
+  return(result.table)
+}
+```
+```{r report}
+All.Results <- rbind(
+  get.all.results('LDA', lda.pred, fake_test),
+  get.all.results('QDA', qda.pred, fake_test),
+  get.all.results('KNN (K=1)', knn.pred.k1, fake_test),
+  get.all.results(paste0('KNN (K=',k.opt,')'), knn.pred.k15, fake_test),
+  get.all.results('SVC', svc.pred, fake_test),
+  get.all.results('SVM', svm.pred, fake_test),
+  get.all.results('Decision Tree', tree.pred, fake_test),
+  get.all.results('Bagging', bag.pred, fake_test),
+  get.all.results('Random Forest', rf.pred, fake_test),
+  get.all.results('Logistic', log.pred, fake_test),
+  get.all.results('Neural Network', nn.pred, fake_test)
+)
+write.csv(All.Results, '../data/Final_models/models_accuracy.csv')
+```
+
+## Boxplot
+```{r simulation}
+# Random sample
+set.seed(565)
+Result.plot <- matrix(0, nrow = 50, ncol = 11)
+for (i in 1: 50){
+  loop.test <- data_test %>% sample_frac(0.3)
+  loop.y <- loop.test$y
+  loop.x_test <- model.matrix(y ~.-1, data = loop.test)
+  loop.x_scale <- scale(loop.test[,-170])
+  
+  Result.plot[i,1] <- mean(predict(fit.lda, loop.test, type = "response")$class
+                            != loop.y) # LDA
+  Result.plot[i,2] <- mean(predict(fit.qda, loop.test, type = "response")$class
+                            != loop.y) # QDA
+  Result.plot[i,3] <- mean(knn(train = pred_train_scaled, test = loop.x_scale[,-170], 
+                               cl = fake_train, k = 1) # KNN (K=1)
+                           != loop.y)
+  Result.plot[i,4] <- mean(knn(train = pred_train_scaled, test = loop.x_scale[,-170], 
+                               cl = fake_train, k = k.opt) 
+                           != loop.y) # KNN (K=k.opt)
+  Result.plot[i,5] <- mean(predict(svc.fit, newdata = loop.test)
+                           != loop.y) # SVC
+  Result.plot[i,6] <- mean(predict(svm.fit, newdata = loop.test)
+                           != loop.y) # SVM
+  Result.plot[i,7] <- mean(predict(prune.news, newdata = loop.test, type ='class') 
+                           != loop.y) # Decision Tree
+  Result.plot[i,8] <- mean( predict(bag.news, newdata = loop.test, type = 'class') 
+                            != loop.y) # Bagging
+  Result.plot[i,9] <- mean(predict(rf.news, newdata = loop.test, type ='class') 
+                           != loop.y) # Random Forest
+  Result.plot[i,10] <- mean(ifelse(predict(log.fit, loop.test, type = "response")>.5, 'T', 'F')
+                           != loop.y) # Logistic
+  Result.plot[i,11] <- mean(ifelse(predict(model, loop.x_test) >.5, 'T', 'F') 
+                           != loop.y) # Neural Network
+}
+colnames(Result.plot) <- c('LDA', 'QDA', 'KNN (K=1)', 'KNN (K=184)', 'SVC', 'SVM', 
+                           'Decision Tree', 'Bagging', 'Random Forest', 
+                           'Logistic', 'Neural Network')
+write.csv(Result.plot, "../data/Final_models/models_error_rate.csv", row.names = FALSE)
+```
+
+```{r boxplot}
+Result.plot <- read.csv("../data/Final_models/models_error_rate.csv", header = TRUE)
+Result.plot2 <- melt(as.data.frame(Result.plot), value.name = "error_rate", id.vars = NULL)
+Result.plot2$variable <- factor(Result.plot2$variable,
+                                levels = colnames(Result.plot))
+
+ggplot(data = Result.plot2, aes(x = variable, y = error_rate)) +
+  geom_boxplot(aes(fill = variable)) +
+  scale_fill_manual(values = c( "#038C5A", "#BF759E", "#609BBF", "#609BBF", "#62BF04", "#62BF04",
+                                "#BF9004", "#BF9004", "#BF9004", "#038C5A", "#9485F2")) +
+  theme(legend.position = "none") +
+  labs(x = "Methods", y = "Error rate", title = "Comparison of error rates between different classifications")+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```

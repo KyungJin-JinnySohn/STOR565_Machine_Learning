@@ -1,0 +1,92 @@
+---
+title: "565 project models: SVM"
+author: "Marshmallow"
+output: html_document
+date: '2022-04-16'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(caret)
+library(e1071)
+```
+
+## SVM
+```{r partitiondata}
+# setting up data
+feature <- read.csv("../data/Feature_extraction/Full_Feature_extraction.csv")
+feature$truth <- c(rep("F",23481),rep("T",21417))
+feature_final <- feature[,c(-1,-2,-3)]
+shuffled_feature <- feature_final[sample(1:nrow(feature_final)), ]
+smp_size <- floor(0.75 * nrow(shuffled_feature))
+set.seed(5935)
+train_ind <- sample(seq_len(nrow(shuffled_feature)), size = smp_size)
+train <- shuffled_feature[train_ind, ]
+test <- shuffled_feature[-train_ind, ]
+```
+
+```{r SVC1}
+# training svc
+set.seed(1)
+svc=svm(factor(truth)~., data=train, kernel="linear", cost=.01, scale=FALSE)
+summary(svc)
+ypred=predict(svc,test)
+t=table(predict=ypred, truth=test$truth)
+confusionMatrix(t)
+
+svc.1=svm(factor(truth)~., data=train, kernel="linear", cost=.1, scale=FALSE)
+summary(svc.1)
+ypred.1=predict(svc.1,test)
+t.1=table(predict=ypred.1, truth=test$truth)
+confusionMatrix(t.1)
+
+svc.2=svm(factor(truth)~., data=train, kernel="linear", cost=1, scale=FALSE)
+summary(svc.2)
+ypred.2=predict(svc,test)
+t.2 = table(predict=ypred.2, truth=test$truth)
+confusionMatrix(t.2)
+
+svc.3=svm(factor(truth)~., data=train, kernel="linear", cost=5, scale=FALSE)
+summary(svc.3)
+ypred.3=predict(svc.3,test)
+t.3 = table(predict=ypred.3, truth=test$truth)
+confusionMatrix(t.3)
+```
+
+```{r SVM_radial}
+# svc=svm(factor(truth)~., data=train, kernel="radial", cost=0.1, gamma=0.5)
+# summary(svc)
+# ypred=predict(svc,test)
+# t = table(predict=ypred, truth=test$truth)
+# confusionMatrix(t)
+# radial svm does not converge
+```
+
+```{r SVM_polynomial}
+#polynomial svm
+svm=svm(factor(truth)~., data=train, kernel="polynomial", cost=1, degree=1)
+summary(svm)
+ypred.svm = predict(svm, test)
+t.svm = table(predict=ypred.svm, truth=test$truth)
+confusionMatrix(t.svm)
+
+svm.2=svm(factor(truth)~., data=train, kernel="polynomial", cost=0.1, degree=2)
+summary(svm.2)
+ypred.svm.2 = predict(svm.2, test)
+t.svm.2 = table(predict=ypred.svm.2, truth=test$truth)
+confusionMatrix(t.svm.2)
+
+svm.3=svm(factor(truth)~., data=train, kernel="polynomial", cost=5, degree=3)
+summary(svm.3)
+ypred.svm.3 = predict(svm.3, test)
+t.svm.3 = table(predict=ypred.svm.3, truth=test$truth)
+confusionMatrix(t.svm.3)
+```
+
+```{r, eval=FALSE}
+# find optimal tuning for svc and polynomial svm
+tune.out=tune(svm,x~.,data=train,kernel="linear",ranges=list(cost=c(0.001, 0.01, 0.1, 1,5,10,100)))
+
+tune.out.poly <- tune(svm, x ~., data = train, kernel = "polynomial", ranges = list(cost = c(0.001, 0.01, 0.1, 1, 5, 10, 100), degree=c(0.5,1,2,3,4)))
+```
