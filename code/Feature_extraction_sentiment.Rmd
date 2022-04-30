@@ -1,0 +1,182 @@
+---
+title: "Sentiment"
+output: html_document
+date: '2022-04-06'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(syuzhet)
+```
+
+```{r load_data}
+# raw data
+fake.raw <- read.csv('../data/Proposal_EDA/Fake.csv', encoding = 'UTF-8', header = TRUE)
+true.raw <- read.csv('../data/Proposal_EDA/True.csv', encoding = 'UTF-8', header = TRUE)
+full.raw <- rbind(true.raw, fake.raw)
+# cleaned data
+df.fake <- read.csv('../data/Feature_extraction/Fake_wCorpus.csv', encoding = 'UTF-8', header = TRUE)
+df.true <- read.csv('../data/Feature_extraction/True_wCorpus.csv', encoding = 'UTF-8', header = TRUE)
+```
+
+```{r check_data}
+# see diff on text data
+head(fake.raw$text)
+head(df.fake$MainTextCorpusStemmed)
+head(fake.raw$title)
+head(df.fake$TitleCorpus)
+head(df.fake$TitleCorpusStemmed)
+```
+
+```{r corpus}
+doc <- df.fake$TitleCorpusStemmed # Put Corpus text here that you want to form a Term Document Matrix on
+doc <- Corpus(VectorSource(doc))
+doc_mat <- TermDocumentMatrix(doc)
+m <- as.matrix(doc_mat)
+v <- sort(rowSums(m), decreasing = TRUE)
+d_Rcran <- data.frame(word = names(v), freq = v)
+tdm <- as.matrix(doc_mat); tdm[1:10, 1:20]
+```
+
+```{r get_sentiment_raw_text}
+# sentiment scores for raw text
+s_v.raw <- get_sentences(full.raw$text[1])
+s_v_sentiment.raw <- get_sentiment(s_v.raw)
+plot(
+  s_v_sentiment.raw, 
+  type="l", 
+  main="Example Plot Trajectory", 
+  xlab = "Narrative Time", 
+  ylab= "Emotional Valence"
+  )
+summary(s_v_sentiment.raw)[6]
+```
+
+```{r get_sentiment_cleaned_text}
+# sentiment scores for cleaned text
+s_v.c <- get_sentences(df.fake$MainTextCorpusStemmed[1])
+s_v_sentiment.c <- get_sentiment(s_v.c)
+plot(
+  s_v_sentiment.c, 
+  type="l", 
+  main="Example Plot Trajectory", 
+  xlab = "Narrative Time", 
+  ylab= "Emotional Valence"
+  )
+summary(s_v_sentiment.c)
+```
+
+```{r get_nrc_sentiment_text}
+# nrc for raw text
+nrc_data.raw <- get_nrc_sentiment(s_v.raw); nrc_data.raw
+# nrc for cleaned text
+nrc_data.c <- get_nrc_sentiment(s_v.c); nrc_data.c
+```
+
+```{r get_sentiment_raw_title}
+# for raw title
+s_v.t_raw <- get_sentences(fake.raw$title[1])
+s_v_sentiment.t_raw <- get_sentiment(s_v.t_raw)
+plot(
+  s_v_sentiment.t_raw, 
+  type="l", 
+  main="Example Plot Trajectory", 
+  xlab = "Narrative Time", 
+  ylab= "Emotional Valence"
+  )
+summary(s_v_sentiment.t_raw)
+```
+
+```{r get_sentiment_cleaned_title}
+# for clean title
+s_v.t_clean <- get_sentences(df.fake$TitleCorpusStemmed[1])
+s_v_sentiment.t_clean <- get_sentiment(s_v.t_clean)
+plot(
+  s_v_sentiment.t_clean, 
+  type="l", 
+  main="Example Plot Trajectory", 
+  xlab = "Narrative Time", 
+  ylab= "Emotional Valence"
+  )
+summary(s_v_sentiment.t_clean)
+```
+
+```{r get_nrc_sentiment_title}
+# nrc for raw title
+nrc_data.raw_title <- get_nrc_sentiment(s_v.t_raw); nrc_data.raw_title
+# nrc for cleaned title
+nrc_data.c_title <- get_nrc_sentiment(s_v.t_clean);
+```
+
+```{r sentiment_data_fake}
+# fake
+fake.feature <- data.frame(matrix(ncol = 23, nrow = nrow(df.fake)))
+colnames(fake.feature) <- c("text.min", "text.1", "text.median", "text.mean", "text.3", 
+                            "text.max", "text.anger", "text.anticipation", "text.disgust", 
+                            "text.fear", "text.joy", "text.sadness", "text.surprise", 
+                            "text.trust", "title.anger", "title.anticipation", 
+                            "title.disgust", "title.fear", "title.joy", "title.sadness", 
+                            "title.surprise", "title.trust", "title.mean")
+for (i in c(1:nrow(df.fake))) {
+  # sentiment scores for raw text
+  s_v.raw <- get_sentences(fake.raw$text[i])
+  s_v_sentiment.raw <- get_sentiment(s_v.raw)
+  text.min = summary(s_v_sentiment.raw)[1]
+  text.1 = summary(s_v_sentiment.raw)[2]
+  text.median = summary(s_v_sentiment.raw)[3]
+  text.mean = summary(s_v_sentiment.raw)[4]
+  text.3 = summary(s_v_sentiment.raw)[5]
+  text.max = summary(s_v_sentiment.raw)[6]
+  #nrc for clean text
+  s_v.c <- get_sentences(df.fake$MainTextCorpusStemmed[i])
+  nrc_data.c <- get_nrc_sentiment(s_v.c)
+  text.anger = nrc_data.c[1]
+  text.anticipation = nrc_data.c[2]
+  text.disgust = nrc_data.c[3]
+  text.fear = nrc_data.c[4]
+  text.joy = nrc_data.c[5]
+  text.sadness = nrc_data.c[6]
+  text.surprise = nrc_data.c[7]
+  text.trust = nrc_data.c[8]
+  # sentiment scores for raw title, same stats since title are one sentence
+  s_v.t_raw <- get_sentences(fake.raw$title[i])
+  s_v_sentiment.t_raw <- get_sentiment(s_v.t_raw)
+  title.mean = summary(s_v_sentiment.t_raw)[4]
+  # nrc for clean title
+  s_v.t_clean <- get_sentences(df.fake$TitleCorpusStemmed[i])
+  nrc_data.c_title <- get_nrc_sentiment(s_v.t_clean)
+  title.anger = nrc_data.c_title[1]
+  title.anticipation = nrc_data.c_title[2]
+  title.disgust = nrc_data.c_title[3]
+  title.fear = nrc_data.c_title[4]
+  title.joy = nrc_data.c_title[5]
+  title.sadness = nrc_data.c_title[6]
+  title.surprise = nrc_data.c_title[7]
+  title.trust = nrc_data.c_title[8]
+  fake.feature$text.min[i] = text.min
+  fake.feature$text.1[i] = text.1
+  fake.feature$text.median[i] = text.median
+  fake.feature$text.mean[i] = text.mean
+  fake.feature$text.3[i] = text.3
+  fake.feature$text.max[i] = text.max
+  fake.feature$text.anger[i] = text.anger
+  fake.feature$text.anticipation[i] = text.anticipation
+  fake.feature$text.disgust[i] = text.disgust
+  fake.feature$text.fear[i] = text.fear
+  fake.feature$text.joy[i] = text.joy
+  fake.feature$text.sadness[i] = text.sadness
+  fake.feature$text.surprise[i] = text.surprise
+  fake.feature$text.trust[i] = text.trust
+  fake.feature$title.anger[i] = title.anger
+  fake.feature$title.anticipation[i] = title.anticipation
+  fake.feature$title.disgust[i] = title.disgust
+  fake.feature$title.fear[i] = title.fear
+  fake.feature$title.joy[i] = title.joy
+  fake.feature$title.sadness[i] = title.sadness
+  fake.feature$title.surprise[i] = title.surprise
+  fake.feature$title.trust[i] = title.trust
+  fake.feature$title.mean[i] = title.mean
+}
+test <- apply(fake.feature, 2, as.character)
+write.csv(test, "../data/Feature_extraction/Fake_sentiment.csv", row.names = FALSE)
+```
