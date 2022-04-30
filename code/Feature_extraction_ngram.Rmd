@@ -21,8 +21,8 @@ library(tidyr)
 ### Read File
 ```{r}
 # Read the file and only select the top 10 articles to test
-fake <- read.csv('Fake_wCorpus.csv', encoding = 'UTF-8', header = TRUE)
-true <- read.csv('True_wCorpus.csv', encoding = 'UTF-8', header = TRUE)
+fake <- read.csv('../data/Feature_extraction/Fake_wCorpus.csv', encoding = 'UTF-8', header = TRUE)
+true <- read.csv('../data/Feature_extraction/True_wCorpus.csv', encoding = 'UTF-8', header = TRUE)
 
 fake$id <- paste0("F", 1:nrow(fake))
 true$id <- paste0("T", 1:nrow(true))
@@ -48,7 +48,6 @@ Refer : (1) [tfidf-definition](https://bookdown.org/Maxine/tidy-text-mining/tf-i
 (3) [tfidf-code2](https://rpubs.com/jackv13/spam-filtering)
 (4) [tfidf-def2](https://towardsdatascience.com/how-to-identify-spam-using-natural-language-processing-nlp-af91f4170113)
 (5) [tfidf-def3](https://towardsdatascience.com/how-to-build-your-first-spam-classifier-in-10-steps-fdbf5b1b3870)
-
 
 ```{r}
 ngram.cal <- function(full.data, n_size) {
@@ -93,7 +92,7 @@ full.title.ngram <- ngram.cal(full.title, 2)
 full.title <- left_join(full.title, full.title.ngram)
 full.title[is.na(full.title)] <- 0
 
-write.csv(full.title, file ="ngram_title.csv", row.names = FALSE)
+write.csv(full.title, file ="../data/Feature_extraction/ngram_title.csv", row.names = FALSE)
 
 # 2. Text
 full.text <- full[, c(9, 10)]
@@ -104,6 +103,6 @@ full.text.ngram <- ngram.cal(full.text, 2)
 full.text <- left_join(full.text, full.text.ngram)
 full.text[is.na(full.text)] <- 0
 
-write.csv(full.text, file ="ngram_text.csv", row.names = FALSE)
+write.csv(full.text, file ="../data/Feature_extraction/ngram_text.csv", row.names = FALSE)
 ```
 
