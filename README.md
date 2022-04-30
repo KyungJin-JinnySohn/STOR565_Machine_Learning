@@ -59,7 +59,15 @@ The table below is the summary of the accuracy table for each method.
 | Logistic | 0.888 | 0.869 | 0.905 |
 | Neural Network | 0.887 | 0.890 | 0.884 |
 
+We also did a test error simulation. Randomly selected 30% of the data from the test set and calculated the test error. We repeated these steps 50 times and implemented a boxplot. 
+
+<p align="center">
+  <img src="./result/Final_models_boxplot.png" width="600">
+  <p align = "center">
+  Boxplot of Classification Model Test Error
+</p>
+
 ## About
 
-- Writer: STOR 565 Team Marshmallow
+- Team member: Kyungjin Sohn, SooHyun Kim, Winnie Ren, Yang Xiao, Ziang Li
 - Last updated: 04.29.2022
