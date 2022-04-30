@@ -1,5 +1,6 @@
 ---
 title: "Sentiment"
+author: "Marshmallow"
 output: html_document
 date: '2022-04-06'
 ---
@@ -8,6 +9,14 @@ date: '2022-04-06'
 knitr::opts_chunk$set(echo = TRUE)
 library(syuzhet)
 ```
+
+### Feature 
+1. get_sentiment function
+    Can see the trend.
+2. get_nrc_sentiment function
+    Return a sentiment table with 8 emotions + pos./neg.
+
+Refer : (1) [sentiment-analysis](https://cran.r-project.org/web/packages/syuzhet/vignettes/syuzhet-vignette.html)
 
 ```{r load_data}
 # raw data
