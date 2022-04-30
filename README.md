@@ -6,17 +6,39 @@ This research looks into how to classify fake news using text characteristics. T
 
 ## Data
 
-Our dataset on real versus fake news comes from [Kaggle](https://www.kaggle.com/datasets/clmentbisaillon/fake-and-real-news-dataset). In GitHub, we have only the most raw data needed to start the project. All data needed or generated for this project can be downloaded from a shared Google drive. Please refer to the link below.
-[STOR565_Machine_Learning](https://drive.google.com/drive/folders/1jwbjs3ZiSQA7Fs7ka9DW1Rzu1SNe-MX4?usp=sharing)
+Our dataset on real versus fake news comes from [Kaggle](https://www.kaggle.com/datasets/clmentbisaillon/fake-and-real-news-dataset). In GitHub, we have only the most raw data needed to start the project. All data needed or generated for this project can be downloaded from a shared Google drive. 
+
+- Google Drive: [STOR565_Machine_Learning](https://drive.google.com/drive/folders/1jwbjs3ZiSQA7Fs7ka9DW1Rzu1SNe-MX4?usp=sharing)
 
 ## Data Pre-processing
 
-## EDA
+We found it necessary to use natural language processing techniques and perform feature extraction since the data that we are using did not come with features that we could work with. 
+
+- Code: *data_cleaning.Rmd*.
+
+## Exploratory Data Analysis(EDA)
+
+To look at the difference between fake and true news, we did exploratory data analysis. In addition, we used a lexicon based method with the Linguistic Inquiry and Word Count(LIWC).
+
+- Code: *Proposal_EDA.Rmd*
+- Detailed Description: *Marshmallow_Project_Proposal.pdf*.
 
 ## Feature extraction
 
+When using text data, the data itself does not include variables with which models can be directly built. Therefore, we need to go through a step of feature extraction. We used two methods:
+
+1. Bag of n-Gram
+          - Code: *Feature_extraction_ngram.Rmd*
+2. Sentiment Analysis
+
+- Code: *Feature_extraction_ngram.Rmd*, *Feature_extraction_sentiment.Rmd*, *Feature_extraction_comb.Rmd*
+
 ## Modeling
 
+We developed a total of 10 classification methods(LDA, QDA, KNN: k = 1, KNN: k = 184, SVC (linear), SVM (polynomial), decision trees, bagging, random forest, logistic, neural networks).
+
+- Code:
 ## About
+
 - Writer: STOR 565 Team Marshmallow
 - Last updated: 04.29.2022
