@@ -28,16 +28,21 @@ To look at the difference between fake and true news, we did exploratory data an
 When using text data, the data itself does not include variables with which models can be directly built. Therefore, we need to go through a step of feature extraction. We used two methods:
 
 1. Bag of n-Gram
-          - Code: *Feature_extraction_ngram.Rmd*
+    + Code: *Feature_extraction_ngram.Rmd*
 2. Sentiment Analysis
-
-- Code: *Feature_extraction_ngram.Rmd*, *Feature_extraction_sentiment.Rmd*, *Feature_extraction_comb.Rmd*
+    + Code: *Feature_extraction_sentiment.Rmd*
+    
+- Code(combines data): *Feature_extraction_comb.Rmd*
 
 ## Modeling
 
 We developed a total of 10 classification methods(LDA, QDA, KNN: k = 1, KNN: k = 184, SVC (linear), SVM (polynomial), decision trees, bagging, random forest, logistic, neural networks).
 
-- Code:
+- Code: *Final_models.Rmd*
+- Code(trial and error): *models_knn.Rmd* and *models_svm.Rmd*
+
+## Result
+
 ## About
 
 - Writer: STOR 565 Team Marshmallow
