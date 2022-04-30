@@ -62,7 +62,7 @@ The table below is the summary of the accuracy table for each method.
 We also did a test error simulation. Randomly selected 30% of the data from the test set and calculated the test error. We repeated these steps 50 times and implemented a boxplot. 
 
 <p align="center">
-  <img src="./result/Final_models_boxplot.png" width="600">
+  <img src="./result/Final_models_boxplot.PNG">
   <p align = "center">
   Boxplot of Classification Model Test Error
 </p>
