@@ -2,7 +2,7 @@
 
 ## Abstract
 
-This research looks into how to classify fake news using text characteristics. The data set used in this research includes 44,898 observations (23,481fake and 21,417 true). After preprocessing and cleaning the data, we implement two feature extraction methods: bag of n-grams and sentiment analysis. Using the features extracted we build 10 models to classify fake and true news (LDA, QDA, KNN: k = 1, KNN: k = 184, SVC (linear), SVM (polynomial), decision trees, bagging, random forest, logistic, neural networks). From our models, we find that the random forest had the best performance with an accuracy of 0.931, sensitivity of 0.914, and a specificity of 0.947. Looking at the variable importance of the random forest model, we find that news articles including words that are similar to trust are an important indicator of fake news. Also, the average and the 1st quartile of text sentiment scores are important. Based on this finding, we suggest that when individuals are reading news articles, they should be more skeptical if the article repeatedly mentions words that are related to trust, such as agree, associate, certify, reassure, and verified. Also, individuals should be more alert when reading news articles with a negative voice. 
+This research looks into how to classify fake news using text characteristics. The data set used in this research includes 44,898 observations (23,481fake and 21,417 true). After preprocessing and cleaning the data, we implement two feature extraction methods: bag of n-grams and sentiment analysis. Using the features extracted we build 10 models to classify fake and true news (LDA, QDA, KNN: k = 1, KNN: k = 184, SVC (linear), SVM (polynomial), decision trees, bagging, random forest, logistic, neural networks). From our models, we find that the random forest had the best performance with an accuracy of 0.931, sensitivity of 0.914, and a specificity of 0.947. Looking at the variable importance of the random forest model, we find that news articles including words that are similar to trust are an important indicator of fake news. Also, the average and the 1st quartile of text sentiment scores are important. Based on this finding, we suggest that when individuals are reading news articles, they should be on the lookout for words such as agree, associate, certify, reassure, and verified, since these words are an indication that the article is trustworthy. In addition, individuals should be more alert when reading news articles with a negative voice.  
 
 ## Data
 
@@ -64,7 +64,7 @@ We also did a test error simulation. Randomly selected 30% of the data from the 
 <p align="center">
   <img src="./result/Final_models_boxplot.PNG">
   <p align = "center">
-  Boxplot of Classification Model Test Error
+  Boxplot of Classification Model Error rate
 </p>
 
 ## About
