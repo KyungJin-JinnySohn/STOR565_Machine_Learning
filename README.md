@@ -25,7 +25,7 @@ To look at the difference between fake and true news, we did exploratory data an
 
 ## Feature extraction
 
-When using text data, the data itself does not include variables with which models can be directly built. Therefore, we need to go through a step of feature extraction. We used two methods:
+When using text data, the data itself does not include variables with which models can be directly built. Therefore, we need to perform a step of feature extraction. We used two methods:
 
 1. Bag of n-Gram
     + Code: `Feature_extraction_ngram.Rmd`
